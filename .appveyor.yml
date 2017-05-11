@@ -1,0 +1,47 @@
+environment:
+  matrix:
+    - RTM_VC_VERSION: vc14
+      RTM_VC_VERSION_CMAKE: "Visual Studio 14 Win64"
+      RTM_MSI: OpenRTM-aist-1.1.2-RELEASE_x86_64.msi
+      RTM_MSI_URL: http://openrtm.org/pub/Windows/OpenRTM-aist/1.1/
+    - RTM_VC_VERSION: vc12
+      RTM_VC_VERSION_CMAKE: "Visual Studio 12 Win64"
+      RTM_MSI: OpenRTM-aist-1.1.2-RELEASE_x86_64.msi
+      RTM_MSI_URL: http://openrtm.org/pub/Windows/OpenRTM-aist/1.1/
+    - RTM_VC_VERSION: vc14
+      RTM_VC_VERSION_CMAKE: "Visual Studio 14 Win64"
+      RTM_MSI: OpenRTM-aist-1.2.0-RELEASE_x86_64.msi
+      RTM_MSI_URL: http://staging.openrtm.org/pub/Windows/OpenRTM-aist/1.2.0/
+    - RTM_VC_VERSION: vc12
+      RTM_VC_VERSION_CMAKE: "Visual Studio 12 Win64"
+      RTM_MSI: OpenRTM-aist-1.2.0-RELEASE_x86_64.msi
+      RTM_MSI_URL: http://staging.openrtm.org/pub/Windows/OpenRTM-aist/1.2.0/
+
+platform: x64
+
+clone_folder: c:\projects
+
+configuration:
+  - Debug
+  - Release
+
+install:
+  - ps: Start-FileDownload "$env:RTM_MSI_URL$env:RTM_MSI"
+  - reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /f /v "ConsentPromptBehaviorAdmin" /t REG_DWORD /d "0"
+  - reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /f /v "PromptOnSecureDesktop" /t REG_DWORD /d "0"
+  - reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /f /v "EnableLUA" /t REG_DWORD /d "0"
+  - reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /f /v "FilterAdministratorToken" /t REG_DWORD /d "1"
+  - ps: Restart-Computer -Force -ErrorAction SilentlyContinue
+  - start /wait msiexec /i "$env:RTM_MSI" /qn /forcerestart /le "install.log"
+  - ps: Restart-Computer -Force -ErrorAction SilentlyContinue
+  - ps: Start-Sleep -s 10 # wait restart
+  - type install.log
+  - cinst doxygen.install -y
+  - refreshenv
+  - env
+
+build:
+
+before_build:
+  - mkdir build && cd build
+  - ps: cmake -G "$env:RTM_VC_VERSION_CMAKE" ..
